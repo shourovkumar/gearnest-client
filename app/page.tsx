@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 export default function Home() {
   const [equipments, setEquipments] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/equipment`)
+    fetch(`${API}/equipment`)
       .then((res) => res.json())
       .then((data) => setEquipments(data.equipments || []));
   }, []);
