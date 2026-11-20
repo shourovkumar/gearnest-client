@@ -8,11 +8,11 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
         <Link href="/" className="text-2xl font-bold text-emerald-600">
           GearNest
         </Link>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-wrap gap-3 items-center justify-center">
           <Link href="/" className="hover:text-emerald-600">Home</Link>
           <Link href="/equipment" className="hover:text-emerald-600">All Equipment</Link>
           {user ? (
