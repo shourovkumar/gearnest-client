@@ -1,4 +1,5 @@
 // sob page er main layout
+import { Toaster } from "react-hot-toast";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { AuthProvider } from "../context/AuthContext";
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           {children}
           <Footer />
+          <Toaster position="top-center" />
         </AuthProvider>
       </body>
     </html>
