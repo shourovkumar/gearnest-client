@@ -12,12 +12,15 @@ export default function CustomerDashboard() {
   const [tab, setTab] = useState("rentals");
   const [bookings, setBookings] = useState<any[]>([]);
   const [favs, setFavs] = useState<any[]>([]);
+  const [myReviews, setMyReviews] = useState<any[]>([]);
   const [profile, setProfile] = useState({ name: "", photo: "", phone: "", address: "" });
 
   useEffect(() => {
     if (!token) return;
     fetch(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setBookings(d.bookings || []));
     fetch(`${API}/favorites/my`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setFavs(d.favorites || []));
+    // my reviews - jodi server a route na thake, empty dekhabe
+    fetch(`${API}/reviews/my`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setMyReviews(d.reviews || d || [])).catch(() => setMyReviews([]));
     if (user) setProfile({ name: user.name || "", photo: (user as any).photo || "", phone: (user as any).phone || "", address: (user as any).address || "" });
   }, [token, user]);
 
@@ -33,13 +36,18 @@ export default function CustomerDashboard() {
     toast.success("Profile updated");
   };
 
+  // profile completeness - koto % fill hoise
+  const filled = [profile.name, profile.photo, profile.phone, profile.address].filter((x) => x).length;
+  const percent = Math.round((filled / 4) * 100);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold">Customer Dashboard</h1>
       <p className="text-gray-500">Welcome, {user?.name}</p>
-      <div className="flex gap-2 mt-5">
+      <div className="flex gap-2 mt-5 flex-wrap">
         <button onClick={() => setTab("rentals")} className={`px-4 py-2 rounded-full ${tab === "rentals" ? "bg-emerald-600 text-white" : "border"}`}>My Rentals</button>
         <button onClick={() => setTab("favs")} className={`px-4 py-2 rounded-full ${tab === "favs" ? "bg-emerald-600 text-white" : "border"}`}>Favorites</button>
+        <button onClick={() => setTab("reviews")} className={`px-4 py-2 rounded-full ${tab === "reviews" ? "bg-emerald-600 text-white" : "border"}`}>My Reviews</button>
         <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-full ${tab === "profile" ? "bg-emerald-600 text-white" : "border"}`}>Profile</button>
       </div>
 
@@ -71,9 +79,27 @@ export default function CustomerDashboard() {
         </div>
       )}
 
+      {tab === "reviews" && (
+        <div className="mt-5 space-y-3">
+          {myReviews.map((r: any) => (
+            <div key={r._id} className="bg-white p-4 rounded-2xl shadow">
+              <p className="font-bold">{r.equipment?.name || "Equipment"} - ⭐ {r.rating}/5</p>
+              <p className="text-gray-600">{r.comment}</p>
+              <p className="text-xs text-gray-400">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}</p>
+            </div>
+          ))}
+          {myReviews.length === 0 && <p className="bg-white p-4 rounded-2xl text-center text-gray-500">No reviews yet - Details page theke review dao</p>}
+        </div>
+      )}
+
       {tab === "profile" && (
         <form onSubmit={saveProfile} className="bg-white p-5 rounded-2xl shadow mt-5 max-w-md space-y-3">
           <p><b>Email:</b> {user?.email}</p>
+          <div>
+            <p className="text-sm">Profile Completeness: {percent}%</p>
+            <div className="w-full bg-gray-200 h-2 rounded-full"><div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${percent}%` }}></div></div>
+            {percent < 100 && <p className="text-xs text-orange-500 mt-1">Phone / Photo / Address baki ache - fill korle 100% hobe</p>}
+          </div>
           <input className="w-full border p-2 rounded" placeholder="Name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
           <input className="w-full border p-2 rounded" placeholder="Photo Link" value={profile.photo} onChange={(e) => setProfile({ ...profile, photo: e.target.value })} />
           <input className="w-full border p-2 rounded" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
