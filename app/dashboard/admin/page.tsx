@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const [equipments, setEquipments] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({ totalUsers: 0, totalEquipment: 0, totalBookings: 0, pendingApprovals: 0, completed: 0, totalRevenue: 0, monthly: [] });
+  const [profile, setProfile] = useState({ name: "", photo: "", phone: "", address: "" });
 
   const load = () => {
     if (!token) return;
@@ -22,7 +23,10 @@ export default function AdminDashboard() {
     fetch(`${API}/bookings/all`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setRentals(d.bookings || []));
     fetch(`${API}/analytics/admin`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setStats(d));
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    load();
+    if (user) setProfile({ name: user.name || "", photo: (user as any).photo || "", phone: (user as any).phone || "", address: (user as any).address || "" });
+  }, [token, user]);
 
   const changeRole = async (id: string, role: string) => {
     await fetch(`${API}/users/${id}/role`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ role }) });
@@ -42,6 +46,12 @@ export default function AdminDashboard() {
     load();
   };
 
+  const saveProfile = async (e: any) => {
+    e.preventDefault();
+    await fetch(`${API}/auth/profile`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(profile) });
+    toast.success("Profile updated");
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
@@ -51,6 +61,7 @@ export default function AdminDashboard() {
         <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-full ${tab === "users" ? "bg-emerald-600 text-white" : "border"}`}>All Users</button>
         <button onClick={() => setTab("eq")} className={`px-4 py-2 rounded-full ${tab === "eq" ? "bg-emerald-600 text-white" : "border"}`}>All Equipment</button>
         <button onClick={() => setTab("rentals")} className={`px-4 py-2 rounded-full ${tab === "rentals" ? "bg-emerald-600 text-white" : "border"}`}>All Rentals</button>
+        <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-full ${tab === "profile" ? "bg-emerald-600 text-white" : "border"}`}>My Profile</button>
       </div>
 
       {tab === "overview" && (
@@ -89,6 +100,17 @@ export default function AdminDashboard() {
           <table className="w-full text-sm"><thead><tr className="bg-gray-50"><th className="p-3 text-left">Customer</th><th className="p-3">Owner</th><th className="p-3">Equipment</th><th className="p-3">Duration</th><th className="p-3">Amount</th><th className="p-3">Payment</th><th className="p-3">Status</th></tr></thead>
             <tbody>{rentals.map((b) => (<tr key={b._id} className="border-t"><td className="p-3">{b.customer?.name}</td><td className="p-3">{b.owner?.name}</td><td className="p-3">{b.equipment?.name}</td><td className="p-3">{new Date(b.startDate).toLocaleDateString()} - {new Date(b.endDate).toLocaleDateString()}</td><td className="p-3">৳{b.totalAmount}</td><td className="p-3">{b.paymentStatus}</td><td className="p-3">{b.bookingStatus}</td></tr>))}</tbody></table>
         </div>
+      )}
+
+      {tab === "profile" && (
+        <form onSubmit={saveProfile} className="bg-white p-5 rounded-2xl shadow mt-5 max-w-md space-y-3">
+          <p><b>Email:</b> {user?.email} | <b>Role:</b> {user?.role}</p>
+          <input className="w-full border p-2 rounded" placeholder="Name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Photo Link" value={profile.photo} onChange={(e) => setProfile({ ...profile, photo: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Address" value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} />
+          <button className="bg-emerald-600 text-white px-6 py-2 rounded-full">Save Profile</button>
+        </form>
       )}
     </div>
   );
