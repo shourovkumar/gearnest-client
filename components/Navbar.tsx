@@ -2,6 +2,7 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -27,6 +28,7 @@ export default function Navbar() {
               <Link href="/register" className="bg-emerald-600 text-white px-3 py-1 rounded">Register</Link>
             </>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </nav>

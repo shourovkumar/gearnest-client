@@ -6,3 +6,13 @@ body {
   background: white;
   color: #1e293b;
 }
+
+/* dark mode */
+.dark body {
+  background: #0f172a;
+  color: white;
+}
+.dark .bg-white {
+  background: #1e293b !important;
+  color: white;
+}
