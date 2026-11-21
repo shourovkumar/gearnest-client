@@ -1,5 +1,6 @@
 // owner dashboard - add + my equipment + rentals + analytics
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -14,6 +15,7 @@ export default function OwnerDashboard() {
   const [myRentals, setMyRentals] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({ totalEquipment: 0, totalBookings: 0, totalEarnings: 0, monthly: [] });
   const [form, setForm] = useState({ name: "", description: "", category: "Construction Equipment", location: "Dhaka", rentalPrice: "", rentalType: "Daily", availableQuantity: 1, condition: "Good", brand: "", model: "", image: "", terms: "" });
+  const [profile, setProfile] = useState({ name: "", photo: "", phone: "", address: "" });
 
   const load = () => {
     if (!token) return;
@@ -21,21 +23,68 @@ export default function OwnerDashboard() {
     fetch(`${API}/bookings/owner`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setMyRentals(d.bookings || []));
     fetch(`${API}/analytics/owner`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then((d) => setStats(d));
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    load();
+    if (user) setProfile({ name: user.name || "", photo: (user as any).photo || "", phone: (user as any).phone || "", address: (user as any).address || "" });
+  }, [token, user]);
 
   const addEq = async (e: any) => {
     e.preventDefault();
     const res = await fetch(`${API}/equipment`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...form, rentalPrice: Number(form.rentalPrice) }) });
     if (!res.ok) return toast.error("Add failed");
     toast.success("Equipment added - waiting for approval");
+    setForm({ name: "", description: "", category: "Construction Equipment", location: "Dhaka", rentalPrice: "", rentalType: "Daily", availableQuantity: 1, condition: "Good", brand: "", model: "", image: "", terms: "" });
     setTab("my");
     load();
+  };
+
+  // imgbb upload - file dile link paba
+  const handleImgUpload = async (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    const loadId = toast.loading("Uploading image...");
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`, { method: "POST", body: formData });
+      const data = await res.json();
+      toast.dismiss(loadId);
+      if (data.success) {
+        setForm({ ...form, image: data.data.url });
+        toast.success("Image uploaded");
+      } else {
+        toast.error("Upload failed - ImgBB key check koro, link diyeo hobe");
+      }
+    } catch (error) {
+      toast.dismiss(loadId);
+      toast.error("Upload failed");
+    }
   };
 
   const delEq = async (id: string) => {
     await fetch(`${API}/equipment/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     toast.success("Deleted");
     load();
+  };
+
+  // update - price + quantity change
+  const updateEq = async (it: any) => {
+    const newPrice = prompt("New Price likho:", it.rentalPrice);
+    if (!newPrice) return;
+    const newQty = prompt("New Available Quantity likho:", it.availableQuantity);
+    await fetch(`${API}/equipment/${it._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ rentalPrice: Number(newPrice), availableQuantity: Number(newQty || it.availableQuantity) }),
+    });
+    toast.success("Updated");
+    load();
+  };
+
+  const saveProfile = async (e: any) => {
+    e.preventDefault();
+    await fetch(`${API}/auth/profile`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(profile) });
+    toast.success("Profile updated");
   };
 
   return (
@@ -47,6 +96,7 @@ export default function OwnerDashboard() {
         <button onClick={() => setTab("add")} className={`px-4 py-2 rounded-full ${tab === "add" ? "bg-emerald-600 text-white" : "border"}`}>Add Equipment</button>
         <button onClick={() => setTab("my")} className={`px-4 py-2 rounded-full ${tab === "my" ? "bg-emerald-600 text-white" : "border"}`}>My Equipment</button>
         <button onClick={() => setTab("rentals")} className={`px-4 py-2 rounded-full ${tab === "rentals" ? "bg-emerald-600 text-white" : "border"}`}>My Equipment Rental</button>
+        <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-full ${tab === "profile" ? "bg-emerald-600 text-white" : "border"}`}>My Profile</button>
       </div>
 
       {tab === "overview" && (
@@ -74,7 +124,12 @@ export default function OwnerDashboard() {
           <input className="border p-2 rounded" placeholder="Brand" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
           <input className="border p-2 rounded" placeholder="Model" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
           <input className="border p-2 rounded" placeholder="Condition - Good / New" value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })} />
-          <input required className="border p-2 rounded" placeholder="Image Link / ImgBB Link" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+          <div className="flex flex-col gap-2">
+            <label className="text-sm">Upload Image - ImgBB</label>
+            <input type="file" accept="image/*" onChange={handleImgUpload} className="border p-2 rounded" />
+            <input required className="border p-2 rounded" placeholder="Image Link / ImgBB Link" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+            {form.image && <img src={form.image} className="w-32 h-20 object-cover rounded" alt="preview" />}
+          </div>
           <textarea className="border p-2 rounded md:col-span-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <textarea className="border p-2 rounded md:col-span-2" placeholder="Rental Terms" value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} />
           <button className="bg-emerald-600 text-white py-2 rounded-full md:col-span-2">Publish Equipment - Status Pending</button>
@@ -84,7 +139,7 @@ export default function OwnerDashboard() {
       {tab === "my" && (
         <div className="overflow-x-auto mt-5 bg-white rounded-2xl shadow">
           <table className="w-full text-sm"><thead><tr className="bg-gray-50"><th className="p-3 text-left">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Qty</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead>
-            <tbody>{myEq.map((it) => (<tr key={it._id} className="border-t"><td className="p-3">{it.name}</td><td className="p-3">{it.category}</td><td className="p-3">৳{it.rentalPrice}</td><td className="p-3">{it.availableQuantity}</td><td className="p-3">{it.status}</td><td className="p-3"><button onClick={() => delEq(it._id)} className="text-red-500">Delete</button></td></tr>))}</tbody></table>
+            <tbody>{myEq.map((it) => (<tr key={it._id} className="border-t"><td className="p-3">{it.name}</td><td className="p-3">{it.category}</td><td className="p-3">৳{it.rentalPrice}</td><td className="p-3">{it.availableQuantity}</td><td className="p-3">{it.status}</td><td className="p-3 flex gap-2"><Link href={`/equipment/${it._id}`} className="text-emerald-600">View</Link><button onClick={() => updateEq(it)} className="text-blue-500">Update</button><button onClick={() => delEq(it._id)} className="text-red-500">Delete</button></td></tr>))}</tbody></table>
           {myEq.length === 0 && <p className="p-4 text-center text-gray-500">No equipment yet</p>}
         </div>
       )}
@@ -95,6 +150,17 @@ export default function OwnerDashboard() {
             <tbody>{myRentals.map((b) => (<tr key={b._id} className="border-t"><td className="p-3">{b.customer?.name} - {b.customer?.email}</td><td className="p-3">{b.equipment?.name}</td><td className="p-3">{new Date(b.startDate).toLocaleDateString()} to {new Date(b.endDate).toLocaleDateString()}</td><td className="p-3">{b.quantity}</td><td className="p-3">৳{b.totalAmount}</td><td className="p-3">{b.paymentStatus}</td><td className="p-3">{b.bookingStatus}</td></tr>))}</tbody></table>
           {myRentals.length === 0 && <p className="p-4 text-center text-gray-500">No rentals yet</p>}
         </div>
+      )}
+
+      {tab === "profile" && (
+        <form onSubmit={saveProfile} className="bg-white p-5 rounded-2xl shadow mt-5 max-w-md space-y-3">
+          <p><b>Email:</b> {user?.email} | <b>Role:</b> {user?.role}</p>
+          <input className="w-full border p-2 rounded" placeholder="Name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Photo Link" value={profile.photo} onChange={(e) => setProfile({ ...profile, photo: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+          <input className="w-full border p-2 rounded" placeholder="Address" value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} />
+          <button className="bg-emerald-600 text-white px-6 py-2 rounded-full">Save Profile</button>
+        </form>
       )}
     </div>
   );
