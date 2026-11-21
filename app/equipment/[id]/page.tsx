@@ -16,9 +16,12 @@ export default function DetailsPage() {
   const [msg, setMsg] = useState("");
   const [isFav, setIsFav] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  // past date block - ajker date
+  const today = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
   // booking modal er field - video er moto
-  const [startDate, setStartDate] = useState("2026-11-25");
-  const [endDate, setEndDate] = useState("2026-11-27");
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(tomorrow);
   const [quantity, setQuantity] = useState(1);
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
@@ -75,6 +78,15 @@ export default function DetailsPage() {
     if (user?.role !== "customer") {
       setMsg("Only customer can book. Login as customer.");
       toast.error("Only customer can book");
+      return;
+    }
+    // date check - past date ar end < start hobe na
+    if (new Date(startDate) < new Date(today)) {
+      toast.error("Past date diye booking hobe na");
+      return;
+    }
+    if (new Date(endDate) <= new Date(startDate)) {
+      toast.error("End Date Start Date er pore hote hobe");
       return;
     }
     // notun backend - checkout + stripe
@@ -151,9 +163,9 @@ export default function DetailsPage() {
           <form onSubmit={handleBooking} className="bg-white rounded-2xl p-6 w-full max-w-md space-y-3">
             <h2 className="text-xl font-bold">Book Equipment</h2>
             <label className="text-sm">Start Date</label>
-            <input required type="date" className="w-full border p-2 rounded" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <input required type="date" min={today} className="w-full border p-2 rounded" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             <label className="text-sm">End Date</label>
-            <input required type="date" className="w-full border p-2 rounded" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <input required type="date" min={startDate || today} className="w-full border p-2 rounded" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             <label className="text-sm">Quantity</label>
             <input required type="number" min={1} className="w-full border p-2 rounded" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
             <input required className="w-full border p-2 rounded" placeholder="Contact Number" value={contact} onChange={(e) => setContact(e.target.value)} />
