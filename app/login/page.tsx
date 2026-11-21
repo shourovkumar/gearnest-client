@@ -2,7 +2,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const { login } = useAuth();
+  const googleBtnRef = useRef<HTMLDivElement>(null);
 
   const handleLogin = async (e: any) => {
     e.preventDefault();
@@ -30,22 +31,62 @@ export default function LoginPage() {
     else router.push("/dashboard/customer");
   };
 
-  // google login - default customer hobe backend a
-  const handleGoogle = async () => {
-    const name = prompt("Google Name likho (demo er jonno):") || "Google User";
-    const gEmail = prompt("Google Email likho:") || "google@gmail.com";
-    const photo = "https://i.ibb.co/5GzXkwq/user.png";
-    const res = await fetch(`${API}/auth/google`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email: gEmail, photo }),
-    });
-    const data = await res.json();
-    if (!res.ok) return toast.error("Google login failed");
-    login(data.token, data.user);
-    toast.success("Google login successful");
-    router.push("/dashboard/customer");
+  // google login - asol google popup, requirement onujayi
+  // notun user hole backend a customer hobe
+  const handleGoogleCallback = async (response: any) => {
+    try {
+      // google er id token theke name, email, photo ber kora
+      const payload = JSON.parse(atob(response.credential.split(".")[1]));
+      const res = await fetch(`${API}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.name,
+          email: payload.email,
+          photo: payload.picture,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return toast.error("Google login failed");
+      login(data.token, data.user);
+      toast.success("Google login successful");
+      router.push("/dashboard/customer");
+    } catch (error) {
+      toast.error("Google login failed");
+    }
   };
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const initGoogle = () => {
+      const google = (window as any).google;
+      if (!google || !googleBtnRef.current) return;
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCallback,
+      });
+      google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+        text: "continue_with",
+      });
+    };
+
+    // script age theke thakle abar load korbo na
+    if ((window as any).google) {
+      initGoogle();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogle;
+      document.head.appendChild(script);
+    }
+  }, []);
 
   return (
     <div className="min-h- flex items-center justify-center px-4">
@@ -54,7 +95,15 @@ export default function LoginPage() {
         <input required className="w-full border p-2 rounded" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input required type="password" className="w-full border p-2 rounded" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className="w-full bg-emerald-600 text-white py-2 rounded-full">Login</button>
-        <button type="button" onClick={handleGoogle} className="w-full border py-2 rounded-full">Continue with Google</button>
+
+        {/* asol google button - ekhane google er button asbe */}
+        <div className="flex justify-center">
+          <div ref={googleBtnRef}></div>
+        </div>
+        {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <p className="text-xs text-center text-red-500">Google Client ID missing - .env.local a add koro</p>
+        )}
+
         <p className="text-center text-sm">No account? <Link href="/register" className="text-emerald-600">Register</Link></p>
       </form>
     </div>
