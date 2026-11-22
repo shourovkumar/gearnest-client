@@ -91,7 +91,7 @@ export default function AdminDashboard() {
       {tab === "eq" && (
         <div className="overflow-x-auto mt-5 bg-white rounded-2xl shadow">
           <table className="w-full text-sm"><thead><tr className="bg-gray-50"><th className="p-3 text-left">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Qty</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead>
-            <tbody>{equipments.map((it) => (<tr key={it._id} className="border-t"><td className="p-3">{it.name}</td><td className="p-3">{it.category}</td><td className="p-3">৳{it.rentalPrice}</td><td className="p-3">{it.availableQuantity}</td><td className="p-3">{it.status}</td><td className="p-3 flex gap-2"><button onClick={() => changeStatus(it._id, "Approved")} className="text-emerald-600">Approve</button><button onClick={() => changeStatus(it._id, "Rejected")} className="text-orange-500">Reject</button><button onClick={() => delEq(it._id)} className="text-red-500">Delete</button></td></tr>))}</tbody></table>
+            <tbody>{equipments.map((it) => (<tr key={it._id} className="border-t"><td className="p-3">{it.name}</td><td className="p-3">{it.category}</td><td className="p-3">৳{it.rentalPrice || it.pricePerDay || 0}</td><td className="p-3">{it.availableQuantity || 1}</td><td className="p-3">{it.status || "Pending"}</td><td className="p-3 flex gap-2"><button onClick={() => changeStatus(it._id, "Approved")} className="text-emerald-600">Approve</button><button onClick={() => changeStatus(it._id, "Rejected")} className="text-orange-500">Reject</button><button onClick={() => delEq(it._id)} className="text-red-500">Delete</button></td></tr>))}</tbody></table>
         </div>
       )}
 

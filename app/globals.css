@@ -2,17 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: white;
-  color: #1e293b;
+:root {
+  --gn-dark: #0f172a;
+  --gn-primary: #059669;
+  --gn-accent: #f59e0b;
 }
 
-/* dark mode */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #059669;
+  color: #fff;
+}
+
+/* thin elegant scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* dark mode - keep light cards readable */
 .dark body {
   background: #0f172a;
-  color: white;
+  color: #f8fafc;
 }
 .dark .bg-white {
   background: #1e293b !important;
-  color: white;
+  color: #f8fafc;
 }
+.dark .text-slate-900 { color: #f8fafc !important; }
+.dark .text-slate-500 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #e2e8f0 !important; }
+.dark .bg-slate-50 { background: #0f172a !important; }
+
+/* helpers */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
