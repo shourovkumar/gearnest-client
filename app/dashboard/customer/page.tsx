@@ -47,6 +47,14 @@ export default function CustomerDashboard() {
     toast.success("Removed from favorites");
   };
 
+  const cancelBooking = async (id: string) => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    const res = await fetch(`${API}/bookings/${id}/cancel`, { method: "PUT", headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return toast.error("Cancel failed");
+    toast.success("Booking cancelled");
+    setBookings(bookings.map((b) => (b._id === id ? { ...b, bookingStatus: "Cancelled" } : b)));
+  };
+
   const saveProfile = async (e: any) => {
     e.preventDefault();
     await fetch(`${API}/auth/profile`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(profile) });
@@ -94,7 +102,7 @@ export default function CustomerDashboard() {
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto bg-white rounded-2xl shadow-sm border">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left"><th className="p-4 font-semibold">Equipment</th><th className="p-4">Start</th><th className="p-4">End</th><th className="p-4">Booking Date</th><th className="p-4">Total</th><th className="p-4">Payment</th><th className="p-4">Status</th></tr></thead>
+              <thead><tr className="bg-slate-50 text-left"><th className="p-4 font-semibold">Equipment</th><th className="p-4">Start</th><th className="p-4">End</th><th className="p-4">Booking Date</th><th className="p-4">Total</th><th className="p-4">Payment</th><th className="p-4">Status</th><th className="p-4">Action</th></tr></thead>
               <tbody>
                 {bookings.map((b) => (
                   <tr key={b._id} className="border-t hover:bg-slate-50/50">
@@ -105,6 +113,11 @@ export default function CustomerDashboard() {
                     <td className="p-4 font-bold">৳{Number(b.totalAmount || 0).toLocaleString()}</td>
                     <td className="p-4"><StatusBadge value={b.paymentStatus} type="payment" /></td>
                     <td className="p-4"><StatusBadge value={b.bookingStatus} type="booking" /></td>
+                    <td className="p-4">
+                      {(b.bookingStatus === "Pending" || b.bookingStatus === "Confirmed") && (
+                        <button onClick={() => cancelBooking(b._id)} className="text-red-600 font-semibold text-xs border border-red-200 px-3 py-1.5 rounded-full hover:bg-red-50">Cancel</button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -119,6 +132,9 @@ export default function CustomerDashboard() {
                 <p className="text-xs text-slate-500 mt-1">{new Date(b.startDate).toLocaleDateString()} → {new Date(b.endDate).toLocaleDateString()} - Qty {b.quantity || 1}</p>
                 <div className="flex gap-2 mt-3"><StatusBadge value={b.paymentStatus} type="payment" /><StatusBadge value={b.bookingStatus} type="booking" /></div>
                 <p className="text-xs text-slate-400 mt-2">Booked on {new Date(b.createdAt).toLocaleDateString()}</p>
+                {(b.bookingStatus === "Pending" || b.bookingStatus === "Confirmed") && (
+                  <button onClick={() => cancelBooking(b._id)} className="mt-3 w-full border border-red-200 text-red-600 text-sm font-semibold py-2 rounded-full">Cancel Booking</button>
+                )}
               </div>
             ))}
             {bookings.length === 0 && <p className="bg-white p-6 rounded-2xl text-center text-slate-500 border">No rentals yet. <Link href="/equipment" className="text-emerald-600 font-semibold">Browse equipment</Link></p>}
