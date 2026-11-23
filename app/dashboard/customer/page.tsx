@@ -30,6 +30,7 @@ export default function CustomerDashboard() {
   const [favs, setFavs] = useState<any[]>([]);
   const [myReviews, setMyReviews] = useState<any[]>([]);
   const [profile, setProfile] = useState({ name: "", photo: "", phone: "", address: "" });
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -47,12 +48,13 @@ export default function CustomerDashboard() {
     toast.success("Removed from favorites");
   };
 
-  const cancelBooking = async (id: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
-    const res = await fetch(`${API}/bookings/${id}/cancel`, { method: "PUT", headers: { Authorization: `Bearer ${token}` } });
+  const cancelBooking = async () => {
+    if (!cancelId) return;
+    const res = await fetch(`${API}/bookings/${cancelId}/cancel`, { method: "PUT", headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) return toast.error("Cancel failed");
     toast.success("Booking cancelled");
-    setBookings(bookings.map((b) => (b._id === id ? { ...b, bookingStatus: "Cancelled" } : b)));
+    setBookings(bookings.map((b) => (b._id === cancelId ? { ...b, bookingStatus: "Cancelled" } : b)));
+    setCancelId(null);
   };
 
   const saveProfile = async (e: any) => {
@@ -61,7 +63,6 @@ export default function CustomerDashboard() {
     toast.success("Profile updated");
   };
 
-  // Profile completeness
   const filled = [profile.name, profile.photo, profile.phone, profile.address].filter((x) => x).length;
   const percent = Math.round((filled / 4) * 100);
 
@@ -82,7 +83,6 @@ export default function CustomerDashboard() {
         <Link href="/equipment" className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition text-center">Browse Equipment →</Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6">
         <div className="bg-white rounded-2xl border p-4"><p className="text-xs text-slate-500">Total Rentals</p><p className="text-2xl font-extrabold mt-1">{bookings.length}</p><p className="text-xs text-slate-400 mt-1">All bookings</p></div>
         <div className="bg-white rounded-2xl border p-4"><p className="text-xs text-slate-500">Total Spent</p><p className="text-2xl font-extrabold mt-1">৳{totalSpent.toLocaleString()}</p><p className="text-xs text-slate-400 mt-1">Across all rentals</p></div>
@@ -90,7 +90,6 @@ export default function CustomerDashboard() {
         <div className="bg-white rounded-2xl border p-4"><p className="text-xs text-slate-500">My Reviews</p><p className="text-2xl font-extrabold mt-1">{myReviews.length}</p><p className="text-xs text-slate-400 mt-1">Reviews you wrote</p></div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mt-6 flex-wrap">
         {tabs.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2.5 rounded-full text-sm font-semibold transition ${tab === t.key ? "bg-emerald-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-700 hover:border-emerald-600 hover:text-emerald-700"}`}>{t.label}</button>
@@ -99,7 +98,6 @@ export default function CustomerDashboard() {
 
       {tab === "rentals" && (
         <div className="mt-5">
-          {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto bg-white rounded-2xl shadow-sm border">
             <table className="w-full text-sm">
               <thead><tr className="bg-slate-50 text-left"><th className="p-4 font-semibold">Equipment</th><th className="p-4">Start</th><th className="p-4">End</th><th className="p-4">Booking Date</th><th className="p-4">Total</th><th className="p-4">Payment</th><th className="p-4">Status</th><th className="p-4">Action</th></tr></thead>
@@ -115,7 +113,7 @@ export default function CustomerDashboard() {
                     <td className="p-4"><StatusBadge value={b.bookingStatus} type="booking" /></td>
                     <td className="p-4">
                       {(b.bookingStatus === "Pending" || b.bookingStatus === "Confirmed") && (
-                        <button onClick={() => cancelBooking(b._id)} className="text-red-600 font-semibold text-xs border border-red-200 px-3 py-1.5 rounded-full hover:bg-red-50">Cancel</button>
+                        <button onClick={() => setCancelId(b._id)} className="text-red-600 font-semibold text-xs border border-red-200 px-3 py-1.5 rounded-full hover:bg-red-50">Cancel</button>
                       )}
                     </td>
                   </tr>
@@ -124,7 +122,6 @@ export default function CustomerDashboard() {
             </table>
             {bookings.length === 0 && <p className="p-8 text-center text-slate-500">No rentals yet. <Link href="/equipment" className="text-emerald-600 font-semibold">Browse equipment</Link> to make your first booking.</p>}
           </div>
-          {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {bookings.map((b) => (
               <div key={b._id} className="bg-white rounded-2xl border p-4">
@@ -133,7 +130,7 @@ export default function CustomerDashboard() {
                 <div className="flex gap-2 mt-3"><StatusBadge value={b.paymentStatus} type="payment" /><StatusBadge value={b.bookingStatus} type="booking" /></div>
                 <p className="text-xs text-slate-400 mt-2">Booked on {new Date(b.createdAt).toLocaleDateString()}</p>
                 {(b.bookingStatus === "Pending" || b.bookingStatus === "Confirmed") && (
-                  <button onClick={() => cancelBooking(b._id)} className="mt-3 w-full border border-red-200 text-red-600 text-sm font-semibold py-2 rounded-full">Cancel Booking</button>
+                  <button onClick={() => setCancelId(b._id)} className="mt-3 w-full border border-red-200 text-red-600 text-sm font-semibold py-2 rounded-full">Cancel Booking</button>
                 )}
               </div>
             ))}
@@ -194,6 +191,19 @@ export default function CustomerDashboard() {
           <div><label className="text-sm font-medium">Address</label><input className="w-full border p-2.5 rounded-lg mt-1" placeholder="Full address" value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} /></div>
           <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-semibold w-full sm:w-auto">Save Profile</button>
         </form>
+      )}
+
+      {cancelId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCancelId(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900">Cancel Booking?</h3>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setCancelId(null)} className="flex-1 border border-slate-200 py-2.5 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-50">Keep Booking</button>
+              <button onClick={cancelBooking} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-full text-sm font-semibold">Yes, Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
