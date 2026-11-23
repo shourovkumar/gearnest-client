@@ -1,6 +1,6 @@
 // Details page - equipment details + booking + review + favorite
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
@@ -28,6 +28,13 @@ export default function DetailsPage() {
   const [notes, setNotes] = useState("");
   const { token, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // FIX: Kotha theke login a gelam mone rakha - returnUrl
+  const goLogin = () => {
+    const backTo = pathname || `/equipment/${id}`;
+    router.push(`/login?returnUrl=${encodeURIComponent(backTo)}`);
+  };
 
   useEffect(() => {
     fetch(`${API}/equipment/${id}`)
@@ -63,7 +70,7 @@ export default function DetailsPage() {
 
   const toggleFav = async () => {
     if (!token) {
-      router.push("/login");
+      goLogin();
       return;
     }
     if (isFav) {
@@ -87,7 +94,8 @@ export default function DetailsPage() {
   const handleBooking = async (e: any) => {
     e.preventDefault();
     if (!token) {
-      router.push("/login");
+      setShowModal(false);
+      goLogin();
       return;
     }
     if (user?.role !== "customer") {
@@ -126,7 +134,7 @@ export default function DetailsPage() {
 
   const handleReview = async () => {
     if (!token) {
-      router.push("/login");
+      goLogin();
       return;
     }
     if (!comment.trim()) {
@@ -184,7 +192,7 @@ export default function DetailsPage() {
             <img
               src={item.image || "https://via.placeholder.com/800x560?text=GearNest"}
               alt={item.name}
-              className="w-full h-[300px] sm:h-[420px] lg:h-[480px] object-cover"
+              className="w-full h- sm:h- lg:h- object-cover"
             />
             <span className="absolute top-4 left-4 bg-white/95 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow">{item.category}</span>
             <button
@@ -227,7 +235,7 @@ export default function DetailsPage() {
             <span className="ml-2 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">Secure Payment via Stripe</span>
           </div>
 
-          <p className="text-slate-600 leading-relaxed mt-4 text-[15px]">{item.description}</p>
+          <p className="text-slate-600 leading-relaxed mt-4 text-">{item.description}</p>
 
           <div className="bg-white rounded-2xl border p-4 sm:p-5 mt-5">
             <h3 className="font-bold text-slate-900">Specifications</h3>
@@ -245,7 +253,13 @@ export default function DetailsPage() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-5">
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                if (!token) {
+                  goLogin();
+                  return;
+                }
+                setShowModal(true);
+              }}
               disabled={availableQty <= 0}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3.5 rounded-full transition shadow-sm"
             >
@@ -263,7 +277,7 @@ export default function DetailsPage() {
       {/* Booking modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <form onSubmit={handleBooking} onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-lg space-y-3 max-h-[92vh] overflow-y-auto shadow-2xl">
+          <form onSubmit={handleBooking} onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-lg space-y-3 max-h- overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Book Equipment</h2>
