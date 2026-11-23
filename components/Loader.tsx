@@ -1,86 +1,90 @@
 "use client";
 import { useEffect, useState } from "react";
 
+// FINAL - Circle spinner off, sudhu progress bar
 export default function Loader() {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    setMounted(true);
+
     const conn: any = (navigator as any).connection;
     const type = conn?.effectiveType || "4g";
     const downlink = conn?.downlink || 10;
 
-    let minTime = 600;
-    let maxTime = 1400;
+    let minTime = 700;
+    let maxTime = 1000;
 
     if (type === "slow-2g" || type === "2g") {
-      minTime = 1200;
-      maxTime = 3500;
-    } else if (type === "3g") {
-      minTime = 900;
+      minTime = 1000;
       maxTime = 2200;
+    } else if (type === "3g") {
+      minTime = 800;
+      maxTime = 1600;
     } else {
       if (downlink >= 10) {
-        minTime = 450;
-        maxTime = 900;
+        minTime = 700;
+        maxTime = 1000;
       } else if (downlink >= 5) {
-        minTime = 600;
+        minTime = 800;
         maxTime = 1200;
       } else {
-        minTime = 800;
-        maxTime = 1800;
+        minTime = 900;
+        maxTime = 1400;
       }
     }
 
     const start = performance.now();
-    let hideTimer: any;
-    let maxTimer: any;
-    let fadeTimer: any;
 
-    const hideLoader = () => {
+    const progressTimer = setInterval(() => {
       const elapsed = performance.now() - start;
-      const remaining = Math.max(0, minTime - elapsed);
-      hideTimer = setTimeout(() => {
-        setFadeOut(true);
-        fadeTimer = setTimeout(() => setVisible(false), 300);
-      }, remaining);
-    };
+      setProgress(Math.min(95, (elapsed / maxTime) * 100));
+    }, 30);
 
-    maxTimer = setTimeout(() => {
+    const hideTimer = setTimeout(() => {
+      setProgress(100);
       setFadeOut(true);
-      fadeTimer = setTimeout(() => setVisible(false), 300);
-    }, maxTime);
+      setTimeout(() => {
+        setVisible(false);
+        document.body.style.overflow = "";
+      }, 500);
+    }, minTime);
 
-    if (document.readyState === "complete") {
-      hideLoader();
-    } else {
-      window.addEventListener("load", hideLoader, { once: true });
-    }
+    const maxTimer = setTimeout(() => {
+      setProgress(100);
+      setFadeOut(true);
+      setTimeout(() => {
+        setVisible(false);
+        document.body.style.overflow = "";
+      }, 500);
+    }, maxTime);
 
     document.body.style.overflow = "hidden";
 
     return () => {
+      clearInterval(progressTimer);
       clearTimeout(hideTimer);
       clearTimeout(maxTimer);
-      clearTimeout(fadeTimer);
-      window.removeEventListener("load", hideLoader);
       document.body.style.overflow = "";
     };
   }, []);
-
-  useEffect(() => {
-    if (!visible) document.body.style.overflow = "";
-  }, [visible]);
 
   if (!visible) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center px-4 transition-opacity duration-300 ${
-        fadeOut ? "opacity-0" : "opacity-100"
+      className={`fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center px-4 transition-all duration-500 ease-out ${
+        fadeOut ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
       }`}
     >
-      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
+      <div
+        className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-all duration-700 ease-out ${
+          mounted ? "scale-100 opacity-100" : "scale-75 opacity-0"
+        }`}
+      >
         <span className="text-white text-2xl sm:text-3xl md:text-4xl font-extrabold">G</span>
       </div>
 
@@ -91,11 +95,15 @@ export default function Loader() {
         Preparing your rental experience...
       </p>
 
-      <div className="mt-6 w-10 h-10 sm:w-12 sm:h-12 rounded-full border- border-slate-200 border-t-emerald-600 animate-spin" />
+      {/* Circle spinner ekhane chilo - off kore deya hoise */}
 
       <div className="mt-6 w-40 sm:w-56 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-        <div className="h-full w-1/2 bg-emerald-600 rounded-full animate-pulse" />
+        <div
+          className="h-full bg-emerald-600 rounded-full transition-all duration-100 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
       </div>
+      <p className="mt-3 text-xs text-slate-400 tabular-nums">{Math.round(progress)}%</p>
     </div>
   );
 }
